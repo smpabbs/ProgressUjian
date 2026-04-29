@@ -1,0 +1,8 @@
+// ==================== BACKEND GOOGLE APPS SCRIPT ====================
+// File ini adalah backup kode server (Google Apps Script).
+// Jalankan kode ini di: script.google.com
+//
+// Salin dan paste seluruh isi file code.gs asli Anda ke sini
+// sebagai cadangan / dokumentasi backend.
+//
+// =====================================================================

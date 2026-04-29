@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSAT SMP unit Al Abidin</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ==================== VIEW PUBLIC ==================== -->
+    <div id="view-public" class="app-container">
+        <div class="app-header">
+            <div class="header-left">
+                <h1>
+                    <i class="fas fa-school" style="color: #2563eb;"></i> 
+                    PSAT SMP unit Al Abidin
+                </h1>
+                <div class="subtitle">Sistem Monitoring Penilaian Sumatif Akhir Tahun</div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-warning" onclick="openModal('modal-val-login')">
+                    <i class="fas fa-user-shield"></i> Validator
+                </button>
+                <button class="btn btn-outline" onclick="openModal('modal-login')">
+                    <i class="fas fa-sign-in-alt"></i> Masuk Guru
+                </button>
+                <button class="btn btn-success" onclick="openModal('modal-register')">
+                    <i class="fas fa-user-plus"></i> Registrasi
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Dashboard - Card Style -->
+        <div class="progress-dashboard-v2">
+            <div class="dashboard-header">
+                <i class="fas fa-chart-pie"></i>
+                <h2>Progress Upload PSAT</h2>
+            </div>
+            
+            <!-- 4 Card untuk setiap dokumen -->
+            <div class="progress-cards">
+                <!-- Matrix Card -->
+                <div class="progress-card">
+                    <div class="card-icon matrix-icon">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Matrix Pemetaan</div>
+                        <div class="card-stats">
+                            <span class="card-number" id="card-matrix-count">0/0</span>
+                            <span class="card-percent" id="card-matrix-percent">0%</span>
+                        </div>
+                        <div class="mini-progress">
+                            <div class="mini-progress-fill matrix-fill" id="card-matrix-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Soal Card -->
+                <div class="progress-card">
+                    <div class="card-icon soal-icon">
+                        <i class="fas fa-file-word"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Naskah Soal</div>
+                        <div class="card-stats">
+                            <span class="card-number" id="card-soal-count">0/0</span>
+                            <span class="card-percent" id="card-soal-percent">0%</span>
+                        </div>
+                        <div class="mini-progress">
+                            <div class="mini-progress-fill soal-fill" id="card-soal-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Kisi-kisi Card -->
+                <div class="progress-card">
+                    <div class="card-icon kisi-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Kisi-kisi Ujian</div>
+                        <div class="card-stats">
+                            <span class="card-number" id="card-kisi-count">0/0</span>
+                            <span class="card-percent" id="card-kisi-percent">0%</span>
+                        </div>
+                        <div class="mini-progress">
+                            <div class="mini-progress-fill kisi-fill" id="card-kisi-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Glossary Card -->
+                <div class="progress-card">
+                    <div class="card-icon glossary-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Glossary</div>
+                        <div class="card-stats">
+                            <span class="card-number" id="card-glossary-count">0/0</span>
+                            <span class="card-percent" id="card-glossary-percent">0%</span>
+                        </div>
+                        <div class="mini-progress">
+                            <div class="mini-progress-fill glossary-fill" id="card-glossary-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Soal Approved Section -->
+            <div class="approved-section">
+                <div class="approved-header">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Soal Approved</span>
+                </div>
+                <div class="approved-content">
+                    <div class="approved-stats">
+                        <span class="approved-number" id="approved-count">0/0</span>
+                        <span class="approved-percent" id="approved-percent">0%</span>
+                    </div>
+                    <div class="approved-progress">
+                        <div class="approved-progress-fill" id="approved-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Footer -->
+            <div class="summary-footer">
+                <div class="summary-item total">
+                    <i class="fas fa-users"></i>
+                    <div>
+                        <div class="summary-number" id="footer-total">0</div>
+                        <div class="summary-label">Total Guru</div>
+                    </div>
+                </div>
+                <div class="summary-item complete">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <div class="summary-number" id="footer-complete">0</div>
+                        <div class="summary-label">Dokumen Lengkap</div>
+                    </div>
+                </div>
+                <div class="summary-item action">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <div class="summary-number" id="footer-action">0</div>
+                        <div class="summary-label">Perlu Tindakan</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <select id="sort-by" class="filter-select" onchange="applyFilters()">
+                <option value="default">Urutkan: Kelas & Mapel</option>
+                <option value="status">Urutkan: Status Soal</option>
+                <option value="unit">Urutkan: Unit Guru</option>
+            </select>
+            <select id="filter-level" class="filter-select" onchange="applyFilters()">
+                <option value="all">Semua Kelas</option>
+                <option value="7">Kelas 7</option>
+                <option value="8">Kelas 8</option>
+                <option value="9">Kelas 9</option>
+            </select>
+            <select id="filter-mapel" class="filter-select" onchange="applyFilters()">
+                <option value="all">Semua Mapel</option>
+                <option value="Indonesian">Indonesian</option>
+                <option value="English Cambridge">English Cambridge</option>
+                <option value="English">English</option>
+                <option value="Social (IPS)">Social (IPS)</option>
+                <option value="IPA Cambridge">IPA Cambridge</option>
+                <option value="IPA">IPA</option>
+                <option value="Math Cambridge">Math Cambridge</option>
+                <option value="Math">Math</option>
+                <option value="ICT Progul">ICT Progul</option>
+                <option value="ICT non Progul">ICT non Progul</option>
+                <option value="Civic (PKn)">Civic (PKn)</option>
+                <option value="IFE">IFE</option>
+                <option value="Sport (PJOK)">Sport (PJOK)</option>
+                <option value="Qur'an">Qur'an</option>
+                <option value="Javanese">Javanese</option>
+            </select>
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-guru" class="search-input" 
+                       placeholder="Cari guru atau mapel..." onkeyup="applyFilters()">
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kelas</th>
+                        <th>Unit</th>
+                        <th>Mapel / Guru</th>
+                        <th>Status Soal</th>
+                        <th style="text-align: center;">Matrix</th>
+                        <th style="text-align: center;">Soal</th>
+                        <th style="text-align: center;">Kisi-kisi</th>
+                        <th style="text-align: center;">Glossary</th>
+                    </tr>
+                </thead>
+                <tbody id="public-table-body">
+                    <tr>
+                        <td colspan="8" class="loading-placeholder">
+                            <i class="fas fa-sync fa-spin"></i> Menghubungkan ke Server...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Footer dengan Admin Login Tersembunyi -->
+        <div id="footer-copyright" style="text-align: center; margin-top: 40px; padding: 20px; color: #cbd5e1; font-size: 12px; border-top: 1px solid #e2e8f0;">
+            PSAT unit SMP Al Abidin © 2026 
+            <span style="cursor: pointer; opacity: 0.2;" onclick="openModal('modal-admin-login')" title="Admin Login">•</span>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW TEACHER ==================== -->
+    <div id="view-teacher" class="app-container hidden">
+        <div class="app-header">
+            <div class="header-left">
+                <h1>
+                    <i class="fas fa-chalkboard-teacher" style="color: #10b981;"></i> 
+                    Panel Ruang Kerja
+                </h1>
+                <div class="subtitle" id="teacher-info">Nama Guru - Mapel</div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-danger" onclick="location.reload()">
+                    <i class="fas fa-power-off"></i> Keluar
+                </button>
+            </div>
+        </div>
+        <div class="upload-grid" id="upload-cards"></div>
+    </div>
+
+    <!-- ==================== VIEW VALIDATOR ==================== -->
+    <div id="view-validator" class="app-container hidden">
+        <div class="app-header">
+            <div class="header-left">
+                <h1>
+                    <i class="fas fa-user-shield" style="color: #d97706;"></i> 
+                    Ruang Validator (Fokus Naskah Soal)
+                </h1>
+                <div class="subtitle">
+                    Validasi kualitas naskah soal. Silakan buka file, berikan komentar di Docs, lalu ubah status.
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-danger" onclick="location.reload()">
+                    <i class="fas fa-power-off"></i> Keluar
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal Upload</th>
+                        <th>Kelas/Mapel</th>
+                        <th>Guru Pengampu</th>
+                        <th>Status Naskah</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="validator-table-body">
+                    <tr>
+                        <td colspan="5" class="loading-placeholder">
+                            <i class="fas fa-sync fa-spin"></i> Memuat data...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW ADMIN ==================== -->
+    <div id="view-admin" class="app-container hidden">
+        <div class="app-header">
+            <div class="header-left">
+                <h1>
+                    <i class="fas fa-crown" style="color: #8b5cf6;"></i> 
+                    Panel Administrator
+                </h1>
+                <div class="subtitle">Data Lengkap Guru & Dokumen PSAT</div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-outline" onclick="openDriveFolder('Matrix')">
+                    <i class="fas fa-folder-open"></i> Matrix
+                </button>
+                <button class="btn btn-outline" onclick="openDriveFolder('Soal')">
+                    <i class="fas fa-folder-open"></i> Soal
+                </button>
+                <button class="btn btn-outline" onclick="openDriveFolder('Kisi-kisi')">
+                    <i class="fas fa-folder-open"></i> Kisi
+                </button>
+                <button class="btn btn-outline" onclick="openDriveFolder('Glossary')">
+                    <i class="fas fa-folder-open"></i> Glossary
+                </button>
+                <button class="btn btn-success" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+                <button class="btn btn-danger" onclick="location.reload()">
+                    <i class="fas fa-power-off"></i> Keluar
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Bar Admin -->
+        <div class="filter-bar">
+            <select id="admin-filter-level" class="filter-select" onchange="applyAdminFilters()">
+                <option value="all">Semua Kelas</option>
+                <option value="7">Kelas 7</option>
+                <option value="8">Kelas 8</option>
+                <option value="9">Kelas 9</option>
+            </select>
+            <select id="admin-filter-mapel" class="filter-select" onchange="applyAdminFilters()">
+                <option value="all">Semua Mapel</option>
+                <option value="Indonesian">Indonesian</option>
+                <option value="English Cambridge">English Cambridge</option>
+                <option value="English">English</option>
+                <option value="Social (IPS)">Social (IPS)</option>
+                <option value="IPA Cambridge">IPA Cambridge</option>
+                <option value="IPA">IPA</option>
+                <option value="Math Cambridge">Math Cambridge</option>
+                <option value="Math">Math</option>
+                <option value="ICT Progul">ICT Progul</option>
+                <option value="ICT non Progul">ICT non Progul</option>
+                <option value="Civic (PKn)">Civic (PKn)</option>
+                <option value="IFE">IFE</option>
+                <option value="Sport (PJOK)">Sport (PJOK)</option>
+                <option value="Qur'an">Qur'an</option>
+                <option value="Javanese">Javanese</option>
+            </select>
+            <select id="admin-filter-status" class="filter-select" onchange="applyAdminFilters()">
+                <option value="all">Semua Status Soal</option>
+                <option value="Approved">Approved</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Needs Revision">Needs Revision</option>
+                <option value="Belum Upload">Belum Upload</option>
+            </select>
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="admin-search" class="search-input" 
+                       placeholder="Cari guru, mapel, unit..." onkeyup="applyAdminFilters()">
+            </div>
+        </div>
+
+        <!-- Tabel Admin -->
+        <div class="table-wrapper" style="overflow-x: auto;">
+            <table style="min-width: 1600px;">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Kls</th>
+                        <th>Mapel</th>
+                        <th>Guru</th>
+                        <th>Unit</th>
+                        <th>Matrix</th>
+                        <th>Soal</th>
+                        <th>Kisi</th>
+                        <th>Glos</th>
+                        <th>Status Soal</th>
+                        <th>Bank</th>
+                        <th>No Rekening</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-table-body">
+                    <tr>
+                        <td colspan="12" class="loading-placeholder">
+                            <i class="fas fa-sync fa-spin"></i> Memuat data...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- Modal Validator Login -->
+    <div id="modal-val-login" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">Akses Validator</h2>
+            <div class="modal-subtitle">Masuk menggunakan kredensial khusus</div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="val-user" class="form-input" placeholder="Masukkan Username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="val-pass" class="form-input" placeholder="Masukkan Password">
+            </div>
+            <button class="btn btn-warning" style="width: 100%; margin-top: 10px;" onclick="submitValLogin()">
+                Masuk (Validator)
+            </button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px; border: none;" 
+                    onclick="closeModal('modal-val-login')">
+                Batal
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Validation Action -->
+    <div id="modal-validation" class="modal-overlay">
+        <div class="modal-content large">
+            <h2 class="modal-title">Verifikasi Dokumen</h2>
+            <div class="modal-subtitle" id="val-doc-info">Detail dokumen</div>
+            
+            <a id="val-btn-drive" href="#" target="_blank" class="btn btn-primary" 
+               style="width: 100%; margin-bottom: 24px;">
+                <i class="fas fa-external-link-alt"></i> Buka File Word di Google Drive
+            </a>
+
+            <div class="form-group">
+                <label class="form-label">Ubah Status</label>
+                <select id="val-status" class="form-input">
+                    <option value="Under Review">Sedang Direview (Pending)</option>
+                    <option value="Needs Revision">Perlu Revisi (Kembalikan ke Guru)</option>
+                    <option value="Approved">Approved (Selesai/Tervalidasi)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Catatan / Kesimpulan (Opsional)</label>
+                <textarea id="val-note" class="form-input" rows="4" 
+                          placeholder="Cukup tulis kesimpulan, misal: 'Cek komentar saya di dalam file Docs ya..'"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 30px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-validation')">
+                    Batal
+                </button>
+                <button class="btn btn-success" style="flex: 2;" onclick="submitValidation()">
+                    Simpan Keputusan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Login Guru -->
+    <div id="modal-login" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">Masuk Portal</h2>
+            <div class="modal-subtitle">Masukkan WA dan pilih Mapel Anda</div>
+            <div class="form-group">
+                <label class="form-label">Nomor WhatsApp</label>
+                <div class="input-group">
+                    <span class="input-prefix">+62</span>
+                    <input type="tel" id="login-wa" class="form-input" placeholder="812345678">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mata Pelajaran</label>
+                <select id="login-mapel" class="form-input">
+                    <option value="">-- Pilih Mapel --</option>
+                    <option value="Indonesian">Indonesian</option>
+                    <option value="English Cambridge">English Cambridge</option>
+                    <option value="English">English</option>
+                    <option value="Social (IPS)">Social (IPS)</option>
+                    <option value="IPA Cambridge">IPA Cambridge</option>
+                    <option value="IPA">IPA</option>
+                    <option value="Math Cambridge">Math Cambridge</option>
+                    <option value="Math">Math</option>
+                    <option value="ICT Progul">ICT Progul</option>
+                    <option value="ICT non Progul">ICT non Progul</option>
+                    <option value="Civic (PKn)">Civic (PKn)</option>
+                    <option value="IFE">IFE</option>
+                    <option value="Sport (PJOK)">Sport (PJOK)</option>
+                    <option value="Qur'an">Qur'an</option>
+                    <option value="Javanese">Javanese</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="submitLogin()">
+                Masuk
+            </button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px; border: none;" 
+                    onclick="closeModal('modal-login')">
+                Batal
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Registrasi Guru -->
+    <div id="modal-register" class="modal-overlay">
+        <div class="modal-content large">
+            <h2 class="modal-title">Registrasi Guru</h2>
+            <div class="modal-subtitle">Daftarkan diri Anda ke sistem PSAT</div>
+            
+            <div class="form-group">
+                <input type="text" id="reg-nama" class="form-input" placeholder="Nama Lengkap & Gelar">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <select id="reg-level" class="form-input">
+                    <option value="">Level</option>
+                    <option value="7">Kelas 7</option>
+                    <option value="8">Kelas 8</option>
+                    <option value="9">Kelas 9</option>
+                </select>
+                <select id="reg-unit" class="form-input">
+    <option value="">-- Pilih Unit --</option>
+    <option value="SMP I Al Abidin Surakarta">SMP I Al Abidin Surakarta</option>
+    <option value="SMP ABBS Surakarta">SMP ABBS Surakarta</option>
+    <option value="SMPII Al Abidin Karanganyar">SMPII Al Abidin Karanganyar</option>
+    <option value="SMPII Al Abidin Sukoharjo">SMPII Al Abidin Sukoharjo</option>
+    <option value="SMPII Al Abidin Klaten">SMPII Al Abidin Klaten</option>
+    <option value="SMPII Al Abidin Boyolali">SMPII Al Abidin Boyolali</option>
+    <option value="SMPII Al Abidin Yogyakarta">SMPII Al Abidin Yogyakarta</option>
+    <option value="SMPII Al Abidin Salatiga">SMPII Al Abidin Salatiga</option>
+</select>
+            </div>
+            
+            <div class="form-group">
+                <select id="reg-subject" class="form-input">
+                    <option value="">-- Pilih Mapel --</option>
+                    <option value="Indonesian">Indonesian</option>
+                    <option value="English Cambridge">English Cambridge</option>
+                    <option value="English">English</option>
+                    <option value="Social (IPS)">Social (IPS)</option>
+                    <option value="IPA Cambridge">IPA Cambridge</option>
+                    <option value="IPA">IPA</option>
+                    <option value="Math Cambridge">Math Cambridge</option>
+                    <option value="Math">Math</option>
+                    <option value="ICT Progul">ICT Progul</option>
+                    <option value="ICT non Progul">ICT non Progul</option>
+                    <option value="Civic (PKn)">Civic (PKn)</option>
+                    <option value="IFE">IFE</option>
+                    <option value="Sport (PJOK)">Sport (PJOK)</option>
+                    <option value="Qur'an">Qur'an</option>
+                    <option value="Javanese">Javanese</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <div class="input-group">
+                    <span class="input-prefix">+62</span>
+                    <input type="tel" id="reg-wa" class="form-input" placeholder="Nomor WhatsApp">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <input type="text" id="reg-bank" class="form-input" placeholder="Nama Bank">
+                <input type="text" id="reg-rek" class="form-input" placeholder="No Rekening">
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-register')">
+                    Batal
+                </button>
+                <button class="btn btn-success" style="flex: 2;" onclick="submitRegister()">
+                    Simpan Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Admin Login (Tersembunyi) -->
+    <div id="modal-admin-login" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title"><i class="fas fa-crown" style="color: #8b5cf6;"></i> Akses Administrator</h2>
+            <div class="modal-subtitle">Masuk menggunakan kredensial admin</div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="admin-user" class="form-input" placeholder="Masukkan Username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="admin-pass" class="form-input" placeholder="Masukkan Password">
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px; background: #8b5cf6;" onclick="submitAdminLogin()">
+                <i class="fas fa-lock-open"></i> Masuk Admin
+            </button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px; border: none;" 
+                    onclick="closeModal('modal-admin-login')">
+                Batal
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
