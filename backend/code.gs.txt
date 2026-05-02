@@ -1,8 +1,805 @@
-// ==================== BACKEND GOOGLE APPS SCRIPT ====================
-// File ini adalah backup kode server (Google Apps Script).
-// Jalankan kode ini di: script.google.com
-//
-// Salin dan paste seluruh isi file code.gs asli Anda ke sini
-// sebagai cadangan / dokumentasi backend.
-//
-// =====================================================================
+/**
+ * BACKEND API - PSAT SMP AL ABIDIN
+ * VERSI FINAL - Matrix Input + Versioning + Auto-delete + Validator + Admin
+ */
+
+const CONFIG = {
+  FOLDER_IDS: {
+    "Soal": "1wo2ymUl8qTK-Xo2SsuXZCNRpEEDKJ_VW",
+    "Kisi-kisi": "1tns61QVQXDjmMfLkTAE5GQkHJ0j6DYXa",
+    "Glossary": "1aEvgkbpwVLqHyKUkbosZ0us8mYnlVhQH"
+  },
+  SHEET_NAME_MASTER: "Master_Guru",
+  SHEET_NAME_REKAP: "Rekap_Upload",
+  SHEET_NAME_PATOKAN: "Patokan_Soal",
+  SHEET_NAME_MATRIX: "Matrix_Input"
+};
+
+// ==================== DOGET & DOPOST ====================
+
+function doGet(e) {
+  return ContentService.createTextOutput("API PSAT Aktif - SMP Al Abidin")
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action;
+    const data = payload.data;
+    
+    let result = { success: false, message: "Action tidak dikenali" };
+
+    if (action === "register") {
+      result = registerTeacher(data);
+    } else if (action === "login") {
+      result = checkLogin(data);
+    } else if (action === "upload") {
+      result = processUpload(data);
+    } else if (action === "getProgress") {
+      result = { success: true, data: getPublicProgress() };
+    } else if (action === "getPatokan") {
+      result = getPatokan(data);
+    } else if (action === "saveMatrix") {
+      result = saveMatrix(data);
+    } else if (action === "getMatrix") {
+      result = getMatrix(data);
+    } else if (action === "getMatrixForAdmin") {
+      result = getMatrixForAdmin(data);
+    } else if (action === "getPublicMatrix") {
+     result = getPublicMatrix(data);
+    } else if (action === "validatorLogin") {
+      if (data.username === "validator" && data.password === "123Empat#") {
+        result = { success: true };
+      } else {
+        result = { success: false, message: "Username atau Password Validator salah!" };
+      }
+    } else if (action === "getValidationData") {
+      result = { success: true, data: getValidationData() };
+    } else if (action === "updateValidation") {
+      result = updateValidation(data);
+    } else if (action === "adminLogin") {
+      if (data.username === "admin" && data.password === "123Empat#") {
+        result = { success: true };
+      } else {
+        result = { success: false, message: "Username atau Password Admin salah!" };
+      }
+    } else if (action === "getAdminData") {
+      result = { success: true, data: getAdminData() };
+    }
+    
+
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: false, 
+      message: error.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ==================== GURU & PUBLIK ====================
+
+function registerTeacher(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME_MASTER);
+  
+  if (!sheet) {
+    return { success: false, message: "Sheet Master_Guru tidak ditemukan" };
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][5] && data[i][5].toString() === payload.whatsapp) {
+      return { success: false, message: "Nomor WhatsApp sudah terdaftar!" };
+    }
+  }
+  
+  sheet.appendRow([
+    sheet.getLastRow(),
+    payload.level,
+    payload.subject,
+    payload.nama,
+    payload.unit,
+    payload.whatsapp,
+    payload.rekening || '',
+    payload.bank || ''
+  ]);
+  
+  return { success: true, message: "Registrasi berhasil" };
+}
+
+function checkLogin(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const masterSheet = ss.getSheetByName(CONFIG.SHEET_NAME_MASTER);
+    
+    if (!masterSheet) {
+      return { success: false, message: "Sheet Master_Guru tidak ditemukan" };
+    }
+    
+    const masterData = masterSheet.getDataRange().getValues();
+    
+    let user = null;
+    
+    for (let i = 1; i < masterData.length; i++) {
+      const wa = masterData[i][5] ? masterData[i][5].toString() : '';
+      const mapel = masterData[i][2] ? masterData[i][2].toString() : '';
+      
+      if (wa === data.whatsapp && mapel === data.mapel) {
+        user = {
+          success: true,
+          nama: masterData[i][3] || '',
+          mapel: mapel,
+          level: masterData[i][1] || '',
+          unit: masterData[i][4] || '',
+          docs: {},
+          notes: {},
+          docLinks: {},
+          versions: {},
+          matrixSubmitted: false,
+          matrixData: null
+        };
+        break;
+      }
+    }
+    
+    if (!user) {
+      return { success: false, message: "Kombinasi WA dan Mapel tidak ditemukan" };
+    }
+
+    // Inisialisasi default
+    ["Matrix", "Soal", "Kisi-kisi", "Glossary"].forEach(d => {
+      user.docs[d] = "Belum Upload";
+      user.notes[d] = "";
+      user.docLinks[d] = null;
+      user.versions[d] = 0;
+    });
+
+    // Baca Rekap_Upload
+    const rekapSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REKAP);
+    if (rekapSheet && rekapSheet.getLastRow() > 1) {
+      const rekapData = rekapSheet.getDataRange().getValues();
+      let latestUploads = {};
+      
+      for (let i = 1; i < rekapData.length; i++) {
+        const rowLevel = rekapData[i][1] ? rekapData[i][1].toString() : '';
+        const rowMapel = rekapData[i][2] ? rekapData[i][2].toString() : '';
+        const rowGuru = rekapData[i][3] ? rekapData[i][3].toString() : '';
+        const docType = rekapData[i][4] ? rekapData[i][4].toString() : '';
+        
+        if (rowMapel === user.mapel && 
+            rowLevel === user.level.toString() &&
+            rowGuru === user.nama) {
+          
+          const timestamp = new Date(rekapData[i][0]).getTime();
+          const status = rekapData[i][6] || "Under Review";
+          const note = rekapData[i][7] || "";
+          const link = rekapData[i][5] || null;
+          const version = rekapData[i][8] || 1;
+          
+          if (!latestUploads[docType] || timestamp > latestUploads[docType].timestamp) {
+            latestUploads[docType] = {
+              status: status,
+              note: note,
+              link: link,
+              version: version,
+              timestamp: timestamp
+            };
+          }
+        }
+      }
+      
+      Object.keys(latestUploads).forEach(docType => {
+        user.docs[docType] = latestUploads[docType].status;
+        user.notes[docType] = latestUploads[docType].note;
+        user.docLinks[docType] = latestUploads[docType].link;
+        user.versions[docType] = latestUploads[docType].version;
+      });
+    }
+
+    // Cek Matrix_Input
+    try {
+      const matrixSheet = ss.getSheetByName(CONFIG.SHEET_NAME_MATRIX);
+      if (matrixSheet && matrixSheet.getLastRow() > 1) {
+        const matrixData = matrixSheet.getDataRange().getValues();
+        for (let i = 1; i < matrixData.length; i++) {
+          const mWa = matrixData[i][1] ? matrixData[i][1].toString() : '';
+          const mLevel = matrixData[i][2] ? matrixData[i][2].toString() : '';
+          const mMapel = matrixData[i][3] ? matrixData[i][3].toString() : '';
+          
+          if (mWa === data.whatsapp &&
+              mLevel === user.level.toString() &&
+              mMapel === user.mapel) {
+            user.matrixSubmitted = true;
+            user.docs["Matrix"] = "Approved";
+            user.docLinks["Matrix"] = "MATRIX_INPUT";
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      // Sheet Matrix_Input belum ada, abaikan
+    }
+
+    return user;
+    
+  } catch (error) {
+    return { success: false, message: "Error: " + error.toString() };
+  }
+}
+
+function processUpload(fileData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const rekapSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REKAP);
+    
+    if (!rekapSheet) {
+      return { success: false, message: "Sheet Rekap_Upload tidak ditemukan" };
+    }
+    
+    const rekapData = rekapSheet.getDataRange().getValues();
+    
+    const isSoal = (fileData.type === "Soal");
+    let newVersion = 1;
+    let oldFileId = null;
+    
+    if (isSoal) {
+      for (let i = rekapData.length - 1; i >= 1; i--) {
+        if (rekapData[i][4] === "Soal" &&
+            rekapData[i][2] === fileData.mapel &&
+            rekapData[i][1].toString() === fileData.level.toString() &&
+            rekapData[i][3] === fileData.nama) {
+          
+          const currentVersion = rekapData[i][8] || 1;
+          newVersion = currentVersion + 1;
+          
+          const oldLink = rekapData[i][5];
+          if (oldLink) {
+            const match = oldLink.match(/\/d\/([^\/]+)/);
+            if (match) {
+              oldFileId = match[1];
+            }
+          }
+          break;
+        }
+      }
+      
+      if (oldFileId) {
+        try {
+          DriveApp.getFileById(oldFileId).setTrashed(true);
+        } catch (e) {
+          console.log("Gagal hapus file lama: " + e.toString());
+        }
+      }
+    }
+    
+    let finalFileName = fileData.fileName;
+    if (isSoal) {
+      const ext = fileData.fileName.substring(fileData.fileName.lastIndexOf('.'));
+      const baseName = fileData.fileName.substring(0, fileData.fileName.lastIndexOf('.'));
+      finalFileName = `${fileData.mapel}_Kelas${fileData.level}_v${newVersion}_${fileData.nama}${ext}`;
+    }
+    
+    const folderId = CONFIG.FOLDER_IDS[fileData.type];
+    if (!folderId) {
+      return { success: false, message: "Folder tujuan tidak ditemukan untuk tipe: " + fileData.type };
+    }
+    
+    const folder = DriveApp.getFolderById(folderId);
+    const blob = Utilities.newBlob(
+      Utilities.base64Decode(fileData.base64), 
+      fileData.mimeType, 
+      finalFileName
+    );
+    const file = folder.createFile(blob);
+    
+    const rowData = [
+      new Date(),
+      fileData.level,
+      fileData.mapel,
+      fileData.nama,
+      fileData.type,
+      file.getUrl(),
+      "Under Review",
+      ""
+    ];
+    
+    if (isSoal) {
+      rowData.push(newVersion);
+    }
+    
+    rekapSheet.appendRow(rowData);
+    
+    const response = { success: true, message: "Upload berhasil" };
+    if (isSoal) response.newVersion = newVersion;
+    
+    return response;
+    
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+// ==================== MATRIX INPUT ====================
+
+function getPatokan(data) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME_PATOKAN);
+    if (!sheet) return { success: false, message: "Sheet Patokan_Soal tidak ditemukan" };
+    
+    const patokanData = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < patokanData.length; i++) {
+      if (patokanData[i][0] === data.mapel) {
+        return {
+          success: true,
+          data: {
+            mapel: patokanData[i][0],
+            multiple_choice: {
+              mudah_keluar: patokanData[i][1] || 0, mudah_bank: patokanData[i][2] || 0,
+              sedang_keluar: patokanData[i][3] || 0, sedang_bank: patokanData[i][4] || 0,
+              sulit_keluar: patokanData[i][5] || 0, sulit_bank: patokanData[i][6] || 0
+            },
+            checklist: {
+              mudah_keluar: patokanData[i][7] || 0, mudah_bank: patokanData[i][8] || 0,
+              sedang_keluar: patokanData[i][9] || 0, sedang_bank: patokanData[i][10] || 0,
+              sulit_keluar: patokanData[i][11] || 0, sulit_bank: patokanData[i][12] || 0
+            },
+            uraian: {
+              mudah_keluar: patokanData[i][13] || 0, mudah_bank: patokanData[i][14] || 0,
+              sedang_keluar: patokanData[i][15] || 0, sedang_bank: patokanData[i][16] || 0,
+              sulit_keluar: patokanData[i][17] || 0, sulit_bank: patokanData[i][18] || 0
+            }
+          }
+        };
+      }
+    }
+    
+    return { success: false, message: "Patokan untuk mapel '" + data.mapel + "' tidak ditemukan" };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function saveMatrix(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const matrixSheet = ss.getSheetByName(CONFIG.SHEET_NAME_MATRIX);
+    const rekapSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REKAP);
+    
+    if (!matrixSheet) {
+      return { success: false, message: "Sheet Matrix_Input tidak ditemukan" };
+    }
+    
+    // Hapus data lama
+    if (matrixSheet.getLastRow() > 1) {
+      const matrixData = matrixSheet.getDataRange().getValues();
+      const rowsToDelete = [];
+      
+      for (let i = 1; i < matrixData.length; i++) {
+        if (matrixData[i][1] && matrixData[i][1].toString() === data.whatsapp &&
+            matrixData[i][2] && matrixData[i][2].toString() === data.level.toString() &&
+            matrixData[i][3] === data.mapel) {
+          rowsToDelete.push(i + 1);
+        }
+      }
+      
+      for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+        matrixSheet.deleteRow(rowsToDelete[i]);
+      }
+    }
+    
+    // Simpan data baru
+    const timestamp = new Date();
+    const baseRow = [
+      timestamp,
+      data.whatsapp,
+      data.level,
+      data.mapel,
+      data.guru,
+      data.unit
+    ];
+    
+    data.chapters.forEach(chapter => {
+      const row = [...baseRow, chapter.name || ''];
+      const d = chapter.data || {};
+      
+      const dataColumns = [
+        d.pilgan_mudah_keluar || 0, d.pilgan_mudah_bank || 0,
+        d.pilgan_sedang_keluar || 0, d.pilgan_sedang_bank || 0,
+        d.pilgan_sulit_keluar || 0, d.pilgan_sulit_bank || 0,
+        d.ceklist_mudah_keluar || 0, d.ceklist_mudah_bank || 0,
+        d.ceklist_sedang_keluar || 0, d.ceklist_sedang_bank || 0,
+        d.ceklist_sulit_keluar || 0, d.ceklist_sulit_bank || 0,
+        d.essay_mudah_keluar || 0, d.essay_mudah_bank || 0,
+        d.essay_sedang_keluar || 0, d.essay_sedang_bank || 0,
+        d.essay_sulit_keluar || 0, d.essay_sulit_bank || 0,
+        "Approved"
+      ];
+      
+      matrixSheet.appendRow([...row, ...dataColumns]);
+    });
+    
+    // Update Rekap_Upload
+    if (rekapSheet && rekapSheet.getLastRow() > 0) {
+      const rekapData = rekapSheet.getDataRange().getValues();
+      let existingRow = -1;
+      
+      for (let i = 1; i < rekapData.length; i++) {
+        if (rekapData[i][4] === "Matrix" &&
+            rekapData[i][1] && rekapData[i][1].toString() === data.level.toString() &&
+            rekapData[i][2] === data.mapel &&
+            rekapData[i][3] === data.guru) {
+          existingRow = i + 1;
+          break;
+        }
+      }
+      
+      if (existingRow > 0) {
+        rekapSheet.getRange(existingRow, 6).setValue("MATRIX_INPUT");
+        rekapSheet.getRange(existingRow, 7).setValue("Approved");
+        rekapSheet.getRange(existingRow, 8).setValue("Matrix disubmit via input (" + data.chapters.length + " chapter)");
+      } else {
+        rekapSheet.appendRow([
+          new Date(),
+          data.level,
+          data.mapel,
+          data.guru,
+          "Matrix",
+          "MATRIX_INPUT",
+          "Approved",
+          "Matrix disubmit via input (" + data.chapters.length + " chapter)"
+        ]);
+      }
+    }
+    
+    return { success: true, message: "Matrix berhasil disimpan" };
+    
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function getMatrix(data) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME_MATRIX);
+    if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
+    
+    const matrixData = sheet.getDataRange().getValues();
+    const chapters = [];
+    
+    for (let i = 1; i < matrixData.length; i++) {
+      if (matrixData[i][1] && matrixData[i][1].toString() === data.whatsapp &&
+          matrixData[i][2] && matrixData[i][2].toString() === data.level.toString() &&
+          matrixData[i][3] === data.mapel) {
+        
+        chapters.push({
+          name: matrixData[i][6] || '',
+          data: {
+            pilgan_mudah_keluar: matrixData[i][7] || 0, pilgan_mudah_bank: matrixData[i][8] || 0,
+            pilgan_sedang_keluar: matrixData[i][9] || 0, pilgan_sedang_bank: matrixData[i][10] || 0,
+            pilgan_sulit_keluar: matrixData[i][11] || 0, pilgan_sulit_bank: matrixData[i][12] || 0,
+            ceklist_mudah_keluar: matrixData[i][13] || 0, ceklist_mudah_bank: matrixData[i][14] || 0,
+            ceklist_sedang_keluar: matrixData[i][15] || 0, ceklist_sedang_bank: matrixData[i][16] || 0,
+            ceklist_sulit_keluar: matrixData[i][17] || 0, ceklist_sulit_bank: matrixData[i][18] || 0,
+            essay_mudah_keluar: matrixData[i][19] || 0, essay_mudah_bank: matrixData[i][20] || 0,
+            essay_sedang_keluar: matrixData[i][21] || 0, essay_sedang_bank: matrixData[i][22] || 0,
+            essay_sulit_keluar: matrixData[i][23] || 0, essay_sulit_bank: matrixData[i][24] || 0
+          }
+        });
+      }
+    }
+    
+    return { success: true, data: chapters };
+  } catch (e) {
+    return { success: true, data: [] };
+  }
+}
+/**
+ * Ambil matrix untuk public view (tanpa login)
+ * @param {object} data - { guru, mapel, level }
+ */
+function getPublicMatrix(data) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME_MATRIX);
+    if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
+    
+    const matrixData = sheet.getDataRange().getValues();
+    const chapters = [];
+    
+    for (let i = 1; i < matrixData.length; i++) {
+      const rowGuru = matrixData[i][4] ? matrixData[i][4].toString() : '';
+      const rowMapel = matrixData[i][3] ? matrixData[i][3].toString() : '';
+      const rowLevel = matrixData[i][2] ? matrixData[i][2].toString() : '';
+      
+      if (rowGuru === data.guru && rowMapel === data.mapel && rowLevel === data.level.toString()) {
+        chapters.push({
+          name: matrixData[i][6] || '',
+          data: {
+            pilgan_mudah_keluar: matrixData[i][7] || 0, pilgan_mudah_bank: matrixData[i][8] || 0,
+            pilgan_sedang_keluar: matrixData[i][9] || 0, pilgan_sedang_bank: matrixData[i][10] || 0,
+            pilgan_sulit_keluar: matrixData[i][11] || 0, pilgan_sulit_bank: matrixData[i][12] || 0,
+            ceklist_mudah_keluar: matrixData[i][13] || 0, ceklist_mudah_bank: matrixData[i][14] || 0,
+            ceklist_sedang_keluar: matrixData[i][15] || 0, ceklist_sedang_bank: matrixData[i][16] || 0,
+            ceklist_sulit_keluar: matrixData[i][17] || 0, ceklist_sulit_bank: matrixData[i][18] || 0,
+            essay_mudah_keluar: matrixData[i][19] || 0, essay_mudah_bank: matrixData[i][20] || 0,
+            essay_sedang_keluar: matrixData[i][21] || 0, essay_sedang_bank: matrixData[i][22] || 0,
+            essay_sulit_keluar: matrixData[i][23] || 0, essay_sulit_bank: matrixData[i][24] || 0
+          }
+        });
+      }
+    }
+    
+    return { success: true, data: chapters, guru: data.guru, mapel: data.mapel, level: data.level };
+  } catch (e) {
+    return { success: false, message: e.toString(), data: [] };
+  }
+}
+
+function getMatrixForAdmin(data) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME_MATRIX);
+    if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
+    
+    const matrixData = sheet.getDataRange().getValues();
+    const result = [];
+    
+    for (let i = 1; i < matrixData.length; i++) {
+      result.push({
+        timestamp: matrixData[i][0] || '',
+        whatsapp: matrixData[i][1] || '',
+        level: matrixData[i][2] || '',
+        mapel: matrixData[i][3] || '',
+        guru: matrixData[i][4] || '',
+        unit: matrixData[i][5] || '',
+        chapter: matrixData[i][6] || '',
+        pilgan_mudah_keluar: matrixData[i][7] || 0,
+        pilgan_mudah_bank: matrixData[i][8] || 0,
+        pilgan_sedang_keluar: matrixData[i][9] || 0,
+        pilgan_sedang_bank: matrixData[i][10] || 0,
+        pilgan_sulit_keluar: matrixData[i][11] || 0,
+        pilgan_sulit_bank: matrixData[i][12] || 0,
+        ceklist_mudah_keluar: matrixData[i][13] || 0,
+        ceklist_mudah_bank: matrixData[i][14] || 0,
+        ceklist_sedang_keluar: matrixData[i][15] || 0,
+        ceklist_sedang_bank: matrixData[i][16] || 0,
+        ceklist_sulit_keluar: matrixData[i][17] || 0,
+        ceklist_sulit_bank: matrixData[i][18] || 0,
+        essay_mudah_keluar: matrixData[i][19] || 0,
+        essay_mudah_bank: matrixData[i][20] || 0,
+        essay_sedang_keluar: matrixData[i][21] || 0,
+        essay_sedang_bank: matrixData[i][22] || 0,
+        essay_sulit_keluar: matrixData[i][23] || 0,
+        essay_sulit_bank: matrixData[i][24] || 0,
+        status: matrixData[i][25] || 'Approved'
+      });
+    }
+    
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: true, data: [] };
+  }
+}
+
+function getPublicProgress() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const masterSheet = ss.getSheetByName(CONFIG.SHEET_NAME_MASTER);
+  const rekapSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REKAP);
+  
+  if (!masterSheet) return [];
+  
+  const masterData = masterSheet.getDataRange().getValues();
+  const rekapData = rekapSheet ? rekapSheet.getDataRange().getValues() : [];
+  
+  let result = [];
+  
+  for (let i = 1; i < masterData.length; i++) {
+    const guruLevel = masterData[i][1] ? masterData[i][1].toString() : '';
+    const guruMapel = masterData[i][2] || '';
+    const guruNama = masterData[i][3] || '';
+    const guruUnit = masterData[i][4] || '';
+    
+    let row = {
+      level: guruLevel,
+      mapel: guruMapel,
+      guru: guruNama,
+      unit: guruUnit,
+      docs: {
+        "Matrix": "gray",
+        "Soal": "gray",
+        "Kisi-kisi": "gray",
+        "Glossary": "gray"
+      },
+      docLinks: {
+        "Matrix": null,
+        "Soal": null,
+        "Kisi-kisi": null,
+        "Glossary": null
+      }
+    };
+    
+    let latestStatus = {};
+    
+    rekapData.forEach(r => {
+      const rekapLevel = r[1] ? r[1].toString() : '';
+      const rekapMapel = r[2] || '';
+      const rekapGuru = r[3] || '';
+      const docType = r[4] || '';
+      
+      if (rekapMapel === guruMapel && 
+          rekapLevel === guruLevel &&
+          rekapGuru === guruNama) {
+        
+        const timestamp = new Date(r[0]).getTime();
+        const status = r[6] || 'Belum Upload';
+        const link = r[5] || null;
+        
+        if (!latestStatus[docType] || timestamp > latestStatus[docType].timestamp) {
+          latestStatus[docType] = {
+            status: status,
+            link: link,
+            timestamp: timestamp
+          };
+        }
+      }
+    });
+    
+    Object.keys(latestStatus).forEach(docType => {
+      const status = latestStatus[docType].status;
+      row.docLinks[docType] = latestStatus[docType].link;
+      
+      if (status === "Approved") {
+        row.docs[docType] = "blue";
+      } else if (status === "Needs Revision") {
+        row.docs[docType] = "yellow";
+      } else if (status === "Under Review") {
+        row.docs[docType] = "green";
+      } else {
+        row.docs[docType] = "gray";
+      }
+    });
+    
+    result.push(row);
+  }
+  
+  return result;
+}
+
+// ==================== VALIDATOR ====================
+
+function getValidationData() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME_REKAP);
+  if (!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  let latestPerGuru = {};
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][4] !== "Soal") continue;
+
+    const level = data[i][1] ? data[i][1].toString() : '';
+    const mapel = data[i][2] || '';
+    const guru = data[i][3] || '';
+    const docType = data[i][4] || '';
+    const timestamp = new Date(data[i][0]);
+    const timestampValue = timestamp.getTime();
+    const version = data[i][8] || 1;
+    
+    const key = level + "_" + mapel + "_" + guru + "_" + docType;
+    
+    if (!latestPerGuru[key] || timestampValue > latestPerGuru[key].timestampValue) {
+      latestPerGuru[key] = {
+        row: i + 1,
+        timestamp: Utilities.formatDate(timestamp, "GMT+7", "dd/MM/yyyy HH:mm"),
+        timestampValue: timestampValue,
+        level: level,
+        mapel: mapel,
+        guru: guru,
+        jenis: docType,
+        link: data[i][5] || '',
+        status: data[i][6] || "Under Review",
+        catatan: data[i][7] || "",
+        version: version
+      };
+    }
+  }
+  
+  let arr = Object.values(latestPerGuru);
+  arr.sort((a, b) => b.timestampValue - a.timestampValue);
+  
+  return arr;
+}
+
+function updateValidation(payload) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet()
+      .getSheetByName(CONFIG.SHEET_NAME_REKAP);
+    
+    sheet.getRange(payload.row, 7).setValue(payload.status);
+    sheet.getRange(payload.row, 8).setValue(payload.catatan);
+    
+    return { success: true, message: "Status berhasil diupdate" };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ==================== ADMIN ====================
+
+function getAdminData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const masterSheet = ss.getSheetByName(CONFIG.SHEET_NAME_MASTER);
+  const rekapSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REKAP);
+  
+  if (!masterSheet) return [];
+  
+  const masterData = masterSheet.getDataRange().getValues();
+  const rekapData = rekapSheet ? rekapSheet.getDataRange().getValues() : [];
+  
+  let result = [];
+  
+  for (let i = 1; i < masterData.length; i++) {
+    const guru = {
+      level: masterData[i][1] || '',
+      mapel: masterData[i][2] || '',
+      guru: masterData[i][3] || '',
+      unit: masterData[i][4] || '',
+      whatsapp: masterData[i][5] || '',
+      rekening: masterData[i][6] || '',
+      bank: masterData[i][7] || '',
+      matrixLink: null,
+      soalLink: null,
+      kisiLink: null,
+      glossLink: null,
+      soalStatus: 'Belum Upload',
+      soalVersion: null,
+      matrixSubmitted: false
+    };
+    
+    let latestDocs = {};
+    
+    rekapData.forEach(r => {
+      if (r[2] === guru.mapel && 
+          r[1] && r[1].toString() === guru.level.toString() &&
+          r[3] === guru.guru) {
+        
+        const docType = r[4] || '';
+        const timestamp = new Date(r[0]).getTime();
+        const status = r[6] || 'Belum Upload';
+        const link = r[5] || null;
+        const version = r[8] || 1;
+        
+        if (!latestDocs[docType] || timestamp > latestDocs[docType].timestamp) {
+          latestDocs[docType] = {
+            status: status,
+            link: link,
+            version: version,
+            timestamp: timestamp          };
+        }
+      }
+    });
+    
+    if (latestDocs['Matrix']) {
+      guru.matrixLink = latestDocs['Matrix'].link;
+      if (latestDocs['Matrix'].status === 'Approved') guru.matrixSubmitted = true;
+    }
+    if (latestDocs['Soal']) {
+      guru.soalLink = latestDocs['Soal'].link;
+      guru.soalStatus = latestDocs['Soal'].status;
+      guru.soalVersion = latestDocs['Soal'].version;
+    }
+    if (latestDocs['Kisi-kisi']) {
+      guru.kisiLink = latestDocs['Kisi-kisi'].link;
+    }
+    if (latestDocs['Glossary']) {
+      guru.glossLink = latestDocs['Glossary'].link;
+    }
+    
+    result.push(guru);
+  }
+  
+  return result;
+}

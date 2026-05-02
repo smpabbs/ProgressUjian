@@ -1,0 +1,407 @@
+﻿/* ==================== SOAL STYLES ==================== */
+
+/* Container */
+.soal-container {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Soal Dashboard */
+.soal-chapter-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.soal-chapter-card:hover {
+    border-color: #cbd5e1;
+}
+
+/* Progress Bar */
+.soal-progress-bar {
+    height: 5px;
+    background: #e2e8f0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.soal-progress-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+/* Validator Sidebar */
+.validator-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: white;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    max-height: 60vh;
+    overflow-y: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.validator-sidebar-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 12px;
+    transition: all 0.15s;
+}
+
+.validator-sidebar-item:hover {
+    background: #f1f5f9;
+}
+
+.validator-sidebar-item.active {
+    background: #eff6ff;
+    border-left: 3px solid #2563eb;
+}
+
+.validator-main {
+    flex: 1;
+    min-width: 400px;
+    background: white;
+    border-radius: 14px;
+    padding: 20px 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+/* Spinner */
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== SOAL EDITOR ==================== */
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: white;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.editor-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.editor-header p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.editor-form {
+    background: white;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.form-select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.form-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid #e2e8f0;
+}
+
+.form-section > label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 10px;
+}
+
+/* Quill */
+.quill-wrapper {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.quill-wrapper .ql-toolbar.ql-snow {
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 8px 8px 0 0;
+}
+
+.quill-wrapper .ql-container.ql-snow {
+    border: none;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+}
+
+.quill-wrapper .ql-editor {
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    resize: vertical;
+    font-size: 14px;
+}
+
+.ql-editor.ql-blank::before {
+    color: #94a3b8;
+    font-style: normal;
+}
+
+/* Gambar di Quill */
+.ql-editor img {
+    cursor: pointer;
+    transition: outline 0.15s;
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+.ql-editor img:hover {
+    outline: 2px dashed #94a3b8;
+    outline-offset: 2px;
+}
+
+/* Opsi Jawaban */
+.opsi-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.opsi-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.opsi-label {
+    font-weight: 700;
+    color: #475569;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.opsi-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.opsi-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+}
+
+.opsi-file {
+    width: 80px;
+    font-size: 10px;
+}
+
+.opsi-preview {
+    margin-top: 4px;
+    margin-left: 30px;
+}
+
+.opsi-img {
+    max-width: 100px;
+    max-height: 60px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Upload Status */
+.upload-status {
+    font-size: 10px;
+    margin-top: 4px;
+}
+
+.upload-status.uploading { color: #f59e0b; }
+.upload-status.success { color: #059669; }
+.upload-status.error { color: #dc2626; }
+
+/* Ceklist */
+.ceklist-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.ceklist-label {
+    font-weight: 700;
+    color: #475569;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.ceklist-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.ceklist-select {
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 12px;
+    width: 100px;
+}
+
+/* Navigation */
+.editor-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.editor-nav .btn {
+    padding: 12px 20px;
+}
+
+.editor-nav .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Progress Dots */
+.editor-progress {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.progress-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0 2px;
+    transition: transform 0.15s;
+}
+
+.progress-dot:hover {
+    transform: scale(1.15);
+}
+
+/* Small Button */
+.btn-sm {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+}
+
+/* ==================== IMAGE RESIZE POPUP ==================== */
+
+.img-resize-popup {
+    animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.img-resize-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.img-resize-controls input:focus {
+    outline: none;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+    .validator-sidebar {
+        width: 100%;
+        max-height: 200px;
+    }
+    
+    .validator-main {
+        min-width: 100%;
+    }
+}
+
+/* ==================== PRINT ==================== */
+
+@media print {
+    .no-print { display: none !important; }
+    .soal-container { padding: 0; }
+    .validator-sidebar { display: none; }
+}

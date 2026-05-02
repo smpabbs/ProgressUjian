@@ -16,8 +16,20 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <!-- html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
+    <!-- Quill Editor -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    
+    <!-- KaTeX Equation -->
+    <link href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/soal.css">
 </head>
 <body>
 
@@ -560,10 +572,14 @@
                 </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                <input type="text" id="reg-bank" class="form-input" placeholder="Nama Bank">
-                <input type="text" id="reg-rek" class="form-input" placeholder="No Rekening">
-            </div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+    <select id="reg-bank" class="form-input">
+        <option value="">-- Pilih Bank --</option>
+        <option value="CIMB">CIMB</option>
+        <option value="MayBank">MayBank</option>
+    </select>
+    <input type="text" id="reg-rek" class="form-input" placeholder="No Rekening">
+</div>
             
             <div style="display: flex; gap: 12px;">
                 <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-register')">
@@ -599,10 +615,16 @@
         </div>
     </div>
 
-    <!-- Custom JavaScript -->
-    <script src="js/config.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/main.js"></script>
+<!-- ==================== SCRIPTS (URUTAN PENTING!) ==================== -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/soal-utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/matrix.js"></script>
+<script src="js/soal-dashboard.js"></script>
+<script src="js/soal-editor.js"></script>
+<script src="js/soal-validator.js"></script>
+<script src="js/soal-generate.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
